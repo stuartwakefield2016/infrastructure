@@ -1,3 +1,4 @@
+import logging
 import boto3
 import botocore.exceptions
 from troposphere import Template
@@ -76,11 +77,18 @@ class StackBuilder:
         :param stack: The stack to create or update
         """
 
+        logger = logging.getLogger(__name__)
+
         try:
+            logger.info('Create stack "{0}"'.format(stack.name()))
             StackBuilder.create(stack)
+            logger.info('Create stack "{0}" complete'.format(stack.name()))
         except botocore.exceptions.ClientError as err:
             if err.response['Error']['Code'] == 'AlreadyExistsException':
+                logger.info('Stack "{0}" already exists'.format(stack.name()))
+                logger.info('Update stack "{0}"'.format(stack.name()))
                 StackBuilder.update(stack)
+                logger.info('Update stack "{0}" complete'.format(stack.name()))
             else:
                 raise err
 
