@@ -7,7 +7,7 @@ authentication are set up in `$HOME/.aws/credentials`.
 Then set up a virtual environment, install the Python
 dependencies and run the build.py script:
 
-```py
+```sh
 virtualenv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
