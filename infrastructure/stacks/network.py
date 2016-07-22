@@ -79,6 +79,18 @@ class NetworkStack:
             RouteTableId=Ref(self._internet_gateway_route_table.title)
         )
 
+        self._internet_gateway_route_table_public_subnet_a = ec2.SubnetRouteTableAssociation(
+            self._stack.component("InternetGatewayRouteTablePublicSubnetA"),
+            RouteTableId=Ref(self._internet_gateway_route_table.title),
+            SubnetId=Ref(self._public_subnet_a.title)
+        )
+
+        self._internet_gateway_route_table_public_subnet_b = ec2.SubnetRouteTableAssociation(
+            self._stack.component("InternetGatewayRouteTablePublicSubnetB"),
+            RouteTableId=Ref(self._internet_gateway_route_table.title),
+            SubnetId=Ref(self._public_subnet_b.title)
+        )
+
         self._apply_resources(self._stack.template())
 
     def _apply_resources(self, template):
