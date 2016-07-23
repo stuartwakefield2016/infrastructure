@@ -2,8 +2,8 @@ import logging
 from infrastructure.stacks.network import NetworkStack
 from botocore.exceptions import ClientError
 
-if __name__ == '__main__':
 
+def main():
     logger = logging.getLogger()
 
     handler = logging.StreamHandler()
@@ -21,3 +21,7 @@ if __name__ == '__main__':
         logger.info('building of NetworkStack complete')
     except ClientError as err:
         logger.error(err)
+
+
+if __name__ == '__main__':
+    main()
