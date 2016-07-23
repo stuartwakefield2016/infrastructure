@@ -13,3 +13,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python build.py
 ```
+
+The script will expect the following environment variables:
+
+```
+ECS_AMI="your-ami"
+ECS_INSTANCE_ROLE="your-instance-role-arn"
+```

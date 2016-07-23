@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Infrastructure for the Stuart Wakefield 2016 website.
+
+Parameters:
+
+  PublicContainerClusterAmi:
+    Type: String
+    Description: The AMI to use for the public container cluster.
+
+  EcsInstanceRole:
+    Type: String
+    Description: The instance role for ECS container instances
+
+Resources:
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: yes
+      EnableDnsHostnames: yes
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: eu-west-1a
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: eu-west-1b
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: eu-west-1a
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      CidrBlock: 10.0.22.0/24
+      AvailabilityZone: eu-west-1b
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: Vpc
+      InternetGatewayId:
+        Ref: InternetGateway
+
+  InternetGatewayRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+
+  InternetGatewayOutboundRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: InternetGatewayRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+
+  InternetGatewayRouteTablePublicSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: InternetGatewayRouteTable
+      SubnetId:
+        Ref: PublicSubnetA
+
+  InternetGatewayRouteTablePublicSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: InternetGatewayRouteTable
+      SubnetId:
+        Ref: PublicSubnetB
+
+  ContainerRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: stuartwakefield2016
+
+  PublicContainerCluster:
+    Type: AWS::ECS::Cluster
+
+  PublicContainerClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS container instances.
+      VpcId:
+        Ref: Vpc
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+
+  PublicContainerClusterLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Ref: PublicContainerClusterAmi
+      InstanceType: t2.micro
+      IamInstanceProfile:
+        Ref: EcsInstanceRole
+      UserData:
+        "Fn::Base64":
+          "Fn::Join":
+            - ""
+            - - "#!/bin/bash\n"
+              - "echo ECS_CLUSTER="
+              - Ref: PublicContainerCluster
+              - " >> /etc/ecs/ecs.config"
+      SecurityGroups:
+        - Ref: PublicContainerClusterSecurityGroup
+      AssociatePublicIpAddress: yes
+
+  PublicContainerClusterAutoScaling:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName:
+        Ref: PublicContainerClusterLaunchConfiguration
+      VPCZoneIdentifier:
+        - Ref: PublicSubnetA
+        - Ref: PublicSubnetB
+      MinSize: 1
+      MaxSize: 8

@@ -1,23 +1,34 @@
 import logging
-from infrastructure.stacks.network import NetworkStack
-from botocore.exceptions import ClientError
+import sys
+import os
+from infrastructure.runner import run
 
-if __name__ == '__main__':
 
+def setuplogging():
     logger = logging.getLogger()
 
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
-        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+    )
     handler.setFormatter(formatter)
 
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
-    try:
-        logger.info('building NetworkStack')
-        network = NetworkStack("StuartWakefield2016Network")
-        network.build()
-        logger.info('building of NetworkStack complete')
-    except ClientError as err:
-        logger.error(err)
+    logging.getLogger("botocore").setLevel(logging.ERROR)
+
+    return logger
+
+
+def main():
+    setuplogging()
+    run('StuartWakefield2016', 'definition.yml', {
+        'PublicContainerClusterAmi': os.environ.get('ECS_AMI'),
+        'EcsInstanceRole': os.environ.get('ECS_INSTANCE_ROLE')
+    })
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
