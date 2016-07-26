@@ -13,3 +13,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python build.py
 ```
+
+## Running the unit tests
+
+To run the unit tests use unittest discover:
+
+```sh
+python -m unittest discover -s tests
+```

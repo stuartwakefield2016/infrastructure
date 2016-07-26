@@ -1,10 +1,37 @@
 import logging
+import yaml
+import json
 import boto3
-import botocore.exceptions
+from botocore.exceptions import ClientError
 from troposphere import Template
 
 
-class Stack:
+class BaseStack:
+
+    def stack_name(self):
+        raise NotImplemented
+
+    def template_body(self):
+        raise NotImplemented
+
+    def process(self):
+        return processstack(self.stack_name(), self.template_body())
+
+
+class RawStack(BaseStack):
+
+    def __init__(self, name, body):
+        self._name = name
+        self._body = body
+
+    def stack_name(self):
+        return self._name
+
+    def template_body(self):
+        return self._body
+
+
+class Stack(BaseStack):
     """
     I am used to build a stack with consistent naming conventions
     using troposphere templates and boto3 to create or update the
@@ -37,6 +64,12 @@ class Stack:
 
     def build(self):
         return StackBuilder.build(self)
+
+    def stack_name(self):
+        return self.name()
+
+    def template_body(self):
+        return self._template.to_json()
 
 
 class ComponentNaming:
@@ -83,7 +116,7 @@ class StackBuilder:
             logger.info('Create stack "{0}"'.format(stack.name()))
             StackBuilder.create(stack)
             logger.info('Create stack "{0}" complete'.format(stack.name()))
-        except botocore.exceptions.ClientError as err:
+        except ClientError as err:
             if err.response['Error']['Code'] == 'AlreadyExistsException':
                 logger.info('Stack "{0}" already exists'.format(stack.name()))
                 logger.info('Update stack "{0}"'.format(stack.name()))
@@ -109,3 +142,46 @@ class StackBuilder:
             StackName=stack.name(),
             TemplateBody=stack.template().to_json()
         )
+
+
+def processstack(name, body):
+    cloudformation = boto3.client("cloudformation")
+
+    try:
+        cloudformation.create_stack(
+            StackName=name,
+            TemplateBody=json.dumps(yaml.load(body))
+        )
+
+    except ClientError as err:
+
+        if err.response['Error']['Code'] == 'AlreadyExistsException':
+
+            try:
+                cloudformation.update_stack(
+                    StackName=name,
+                    TemplateBody=json.dumps(yaml.load(body))
+                )
+
+            except ClientError as err:
+                if err.response['Error']['Code'] == 'ValidationError':
+                    raise NoChangeToStackError
+                else:
+                    raise UnknownStackError
+
+        elif err.response['Error']['Code'] == 'ValidationError':
+            raise InvalidStackError
+        else:
+            raise UnknownStackError
+
+
+class InvalidStackError(Exception):
+    pass
+
+
+class NoChangeToStackError(Exception):
+    pass
+
+
+class UnknownStackError(Exception):
+    pass
