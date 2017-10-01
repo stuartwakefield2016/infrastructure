@@ -5,7 +5,7 @@ before_install:
   - sha256sum -c sh256sum.txt
   - sudo unzip -o terraform_0.10.6_linux_amd64.zip -d /usr/local/bin
 install:
-  - terraform init -backend=true -backend-config="bucket=${S3_TFSTATE_BUCKET}" -backend-config="region=${AWS_DEFAULT_REGION}" -input=false
+  - terraform init -backend=true -backend-config="bucket=${S3_TFSTATE_BUCKET}" -backend-config="region=${AWS_DEFAULT_REGION}" -input=false terraform
 script:
   - terraform plan -out=terraform.tfplan terraform
 deploy:
