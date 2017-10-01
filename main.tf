@@ -3,7 +3,3 @@ terraform {
     key = "terraform.tfstate"
   }
 }
-
-provider "aws" {
-  
-}
