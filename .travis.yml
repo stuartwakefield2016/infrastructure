@@ -3,8 +3,7 @@ before_install:
   - wget https://releases.hashicorp.com/terraform/0.10.6/terraform_0.10.6_linux_amd64.zip
   - echo 'fbb4c37d91ee34aff5464df509367ab71a90272b7fab0fbd1893b367341d6e23  terraform_0.10.6_linux_amd64.zip' > sh256sum.txt
   - sha256sum -c sh256sum.txt
-  - unzip -o terraform_0.10.6_linux_amd64.zip
-  - sudo mv -f terraform /usr/local/bin/terraform
+  - sudo unzip -o terraform_0.10.6_linux_amd64.zip -d /usr/local/bin
 install:
   - terraform init -backend=true -backend-config="bucket=${S3_TFSTATE_BUCKET}" -backend-config="region=${AWS_DEFAULT_REGION}" -input=false
 script:
