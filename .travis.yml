@@ -1,7 +1,15 @@
-language: python
-python:
-  - "3.5"
+before_install:
+  - sudo apt-get install unzip
+  - wget https://releases.hashicorp.com/terraform/0.10.6/terraform_0.10.6_linux_amd64.zip
+  - echo 'fbb4c37d91ee34aff5464df509367ab71a90272b7fab0fbd1893b367341d6e23  terraform_0.10.6_linux_amd64.zip' > sh256sum.txt
+  - sha256sum -c sh256sum.txt
+  - sudo unzip -o terraform_0.10.6_linux_amd64.zip -d /usr/local/bin
 install:
-  - pip install -r requirements.txt
+  - terraform init -backend=true -input=false -backend-config="bucket=${S3_TFSTATE_BUCKET}" -backend-config="region=${AWS_DEFAULT_REGION}"
 script:
-  - python build.py
+  - terraform plan -out=terraform.tfplan
+deploy:
+  provider: script
+  script: terraform apply terraform.tfplan
+  on:
+    tags: true
