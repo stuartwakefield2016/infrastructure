@@ -10,8 +10,6 @@ script:
   - terraform plan -out=terraform.tfplan
 deploy:
   provider: script
-  script:
-    - terraform plan -out=terraform.tfplan
-    - terraform apply terraform.tfplan
+  script: terraform apply terraform.tfplan
   on:
     tags: true
